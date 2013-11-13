@@ -1,3 +1,23 @@
+/*****************************************************************************
+*                                                                            *
+*  OpenNI 2.x Alpha                                                          *
+*  Copyright (C) 2012 PrimeSense Ltd.                                        *
+*                                                                            *
+*  This file is part of OpenNI.                                              *
+*                                                                            *
+*  Licensed under the Apache License, Version 2.0 (the "License");           *
+*  you may not use this file except in compliance with the License.          *
+*  You may obtain a copy of the License at                                   *
+*                                                                            *
+*      http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                            *
+*  Unless required by applicable law or agreed to in writing, software       *
+*  distributed under the License is distributed on an "AS IS" BASIS,         *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  *
+*  See the License for the specific language governing permissions and       *
+*  limitations under the License.                                            *
+*                                                                            *
+*****************************************************************************/
 // PSLinkConsole.cpp : Defines the entry point for the console application.
 //
 
@@ -1047,6 +1067,44 @@ int HardReset(int /*argc*/, const char* /*argv*/[])
 
 	return nRetVal;
 }
+// Retrieve data from firmware according to the command number received from user
+int ReadDebugData(int argc, const char* argv[])
+{
+
+    XnStatus nRetVal = XN_STATUS_OK;
+    XnCommandDebugData commandDebugData = {0};
+    if (argc < 2)
+    {
+        printf("\nUsage: %s <Command ID> \n\n", argv[0]);
+        return -1;
+    }
+    
+    XnUInt8 debugData[1024];
+    commandDebugData.dataID = (uint16_t)MyAtoi(argv[1]);
+    commandDebugData.dataSize = sizeof(debugData);
+    commandDebugData.data = debugData;
+
+    nRetVal = g_device.invoke(PS_COMMAND_READ_DEBUG_DATA, &commandDebugData, sizeof(commandDebugData));
+    if (nRetVal == STATUS_OK)
+    {
+        printf("\nCommand: %x Data size: %d \nData:" ,commandDebugData.dataID, commandDebugData.dataSize);
+        for(int i = 0; i < commandDebugData.dataSize; i++)
+        {
+            if(i % 8 == 0)
+            {
+                printf("\n");
+            }
+            printf("%02x ",commandDebugData.data[i]);
+        }
+        printf("\n\n");
+    }
+    else
+    {
+        printf("Failed to retrieve data: %s\n\n", OpenNI::getExtendedError());
+    }
+
+    return nRetVal;
+}
 
 // Enables/Disables the BIST (XN_LINK_PROP_ID_ACC_ENABLED)
 int Acc(int argc, const char* argv[])
@@ -1493,7 +1551,7 @@ int PrintTempList(int /*argc*/, const char* /*argv*/[])
     args.pTempInfos = tempInfo;
     args.count = sizeof(tempInfo)/sizeof(tempInfo[0]);
 
-    if (STATUS_OK != g_device.invoke(LINK_COMMAND_GET_TEMP_LIST, args)) 
+    if (STATUS_OK != g_device.invoke(PS_COMMAND_GET_TEMP_LIST, args)) 
     {
         printf("Failed getting Temperature list: %s\n\n", OpenNI::getExtendedError());
         return 1;
@@ -1525,7 +1583,7 @@ int ReadTemps(int argc, const char* argv[])
 	supportedTempList.pTempInfos = TempInfos;
 	supportedTempList.count = sizeof(TempInfos)/sizeof(TempInfos[0]);
 
-	if (STATUS_OK != g_device.invoke(LINK_COMMAND_GET_TEMP_LIST, supportedTempList))
+	if (STATUS_OK != g_device.invoke(PS_COMMAND_GET_TEMP_LIST, supportedTempList))
 	{
 		printf("Failed getting Temperature list: %s\n\n", OpenNI::getExtendedError());
 		return -2;
@@ -1646,7 +1704,9 @@ int FormatZone(int argc, const char* argv[])
 	}
 
 	XnUInt32 nZone = MyAtoi(argv[1]);
-	Status nRetVal = g_device.invoke(PS_COMMAND_FORMAT_ZONE, nZone);
+	XnCommandFormatZone formatZone;
+	formatZone.zone = (uint8_t)nZone;
+	Status nRetVal = g_device.invoke(PS_COMMAND_FORMAT_ZONE, formatZone);
 	if (nRetVal == STATUS_OK)
 	{
 		printf("Successfully formatZone.\n\n");
@@ -1830,6 +1890,7 @@ void RegisterCommands()
 	RegisterCommand("ReadAHB", ReadAHB);
 	RegisterCommand("SoftReset", SoftReset);
     RegisterCommand("HardReset", HardReset);
+    RegisterCommand("ReadDebugData", ReadDebugData);
     RegisterCommand("Acc", Acc);
     RegisterCommand("VDD", VDD);
     RegisterCommand("PeriodBist", PeriodicBist);

@@ -1,3 +1,23 @@
+/*****************************************************************************
+*                                                                            *
+*  OpenNI 2.x Alpha                                                          *
+*  Copyright (C) 2012 PrimeSense Ltd.                                        *
+*                                                                            *
+*  This file is part of OpenNI.                                              *
+*                                                                            *
+*  Licensed under the Apache License, Version 2.0 (the "License");           *
+*  you may not use this file except in compliance with the License.          *
+*  You may obtain a copy of the License at                                   *
+*                                                                            *
+*      http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                            *
+*  Unless required by applicable law or agreed to in writing, software       *
+*  distributed under the License is distributed on an "AS IS" BASIS,         *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  *
+*  See the License for the specific language governing permissions and       *
+*  limitations under the License.                                            *
+*                                                                            *
+*****************************************************************************/
 package org.openni.android.samples.simpleviewer;
 
 import java.util.List;
@@ -5,7 +25,7 @@ import java.util.List;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.hardware.usb.UsbDeviceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -26,7 +46,6 @@ public class SimpleViewerActivity
 	
 	private static final String TAG = "SimplerViewer";
 	private OpenNIHelper mOpenNIHelper;
-	private UsbDeviceConnection mDeviceConnection;
 	private boolean mDeviceOpenPending = false;
 	private Thread mMainLoopThread;
 	private boolean mShouldRun = true;
@@ -75,12 +94,13 @@ public class SimpleViewerActivity
 		List<DeviceInfo> devices = OpenNI.enumerateDevices();
 		if (devices.isEmpty()) {
 			showAlertAndExit("No OpenNI-compliant device found.");
-		} else {
-      uri = devices.get(0).getUri();
+			return;
+		}
+		
+		uri = devices.get(0).getUri();
 
-      mDeviceOpenPending = true;
-      mOpenNIHelper.requestDeviceOpen(uri, this);
-    }
+		mDeviceOpenPending = true;
+		mOpenNIHelper.requestDeviceOpen(uri, this);
 	}
 
 	private void showAlertAndExit(String message) {
@@ -114,6 +134,7 @@ public class SimpleViewerActivity
 			}
 		} catch (RuntimeException e) {
 			showAlertAndExit("Failed to open stream: " + e.getMessage());
+			return;
 		}
 		
 		mShouldRun = true;
@@ -121,12 +142,14 @@ public class SimpleViewerActivity
 			@Override
 			public void run() {
 				while (mShouldRun) {
-					VideoStream[] streams = new VideoStream[] { mStream, mSecondStream };
+					VideoStream[] streams = { mStream, mSecondStream };
+					int[] colors = { Color.YELLOW, Color.WHITE };
 					VideoFrameRef frame = null;
 					
 					try {
 						frame = streams[mViewStream].readFrame();
 						// Request rendering of the current OpenNI frame
+						mFrameView.setBaseColor(colors[mViewStream]);
 						mFrameView.update(frame);
 						updateLabel(String.format("Frame Index: %,d | Timestamp: %.6f seconds", frame.getFrameIndex(), frame.getTimestamp() / 1e6));
 					} catch (Exception e) {
@@ -216,11 +239,6 @@ public class SimpleViewerActivity
 		if (mDevice != null) {
 			mDevice.close();
 			mDevice = null;
-		}
-
-		if (mDeviceConnection != null) {
-			mDeviceConnection.close();
-			mDeviceConnection = null;
 		}
 	}
 }

@@ -1,3 +1,23 @@
+/*****************************************************************************
+*                                                                            *
+*  OpenNI 2.x Alpha                                                          *
+*  Copyright (C) 2012 PrimeSense Ltd.                                        *
+*                                                                            *
+*  This file is part of OpenNI.                                              *
+*                                                                            *
+*  Licensed under the Apache License, Version 2.0 (the "License");           *
+*  you may not use this file except in compliance with the License.          *
+*  You may obtain a copy of the License at                                   *
+*                                                                            *
+*      http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                            *
+*  Unless required by applicable law or agreed to in writing, software       *
+*  distributed under the License is distributed on an "AS IS" BASIS,         *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  *
+*  See the License for the specific language governing permissions and       *
+*  limitations under the License.                                            *
+*                                                                            *
+*****************************************************************************/
 #include "XnLinkControlEndpoint.h"
 #include "XnLinkMsgEncoder.h"
 #include "XnLinkMsgParser.h"
@@ -660,12 +680,7 @@ XnStatus LinkControlEndpoint::ExecuteImpl(XnUInt16 nMsgType,
 	m_msgEncoder.EndEncoding(XnLinkFragmentation(fragmentation & XN_LINK_FRAG_END));
 
 	XnUInt32 nBytesLeftToSend = m_msgEncoder.GetEncodedSize();
-	union
-	{
-		const XnUInt8* pRawCommandPacket;
-		XnLinkPacket* pCommandPacket;
-	};
-	pRawCommandPacket = reinterpret_cast<const XnUInt8*>(m_msgEncoder.GetEncodedData());
+	const XnUInt8* pRawCommandPacket = reinterpret_cast<const XnUInt8*>(m_msgEncoder.GetEncodedData());
 
 	/* Second step - Send each packet and get a response for it. */
 	while (nBytesLeftToSend > 0)
@@ -831,6 +846,26 @@ XnStatus LinkControlEndpoint::HardReset()
 	return XN_STATUS_OK;
 }
 
+XnStatus LinkControlEndpoint::ReadDebugData(XnCommandDebugData& commandDebugData)
+{
+    XnStatus nRetVal = XN_STATUS_OK;
+
+    xnLogVerbose(XN_MASK_LINK, "LINK: Getting debug data with ID %d...", commandDebugData.dataID);
+
+    XnLinkGetDebugDataParams params;
+    params.m_nID = commandDebugData.dataID;
+
+    XnUInt32 nResponseSize = m_nMaxResponseSize;
+
+    XnLinkDebugDataResponse* pDebugDataRespondHeader = (XnLinkDebugDataResponse*)m_pIncomingResponse;
+    nRetVal = ExecuteCommand(XN_LINK_MSG_GET_DEBUG_DATA,XN_LINK_STREAM_ID_NONE, &params, sizeof(params), m_pIncomingResponse, nResponseSize);
+    XN_IS_STATUS_OK_LOG_ERROR("Execute get debug data command", nRetVal);
+
+    nRetVal = xnLinkReadDebugData(commandDebugData, pDebugDataRespondHeader);
+    XN_IS_STATUS_OK(nRetVal);
+
+    return nRetVal;
+}
 
 XnStatus LinkControlEndpoint::GetSupportedI2CDevices(xnl::Array<XnLinkI2CDevice>& supportedDevices)
 {
@@ -1205,7 +1240,6 @@ XnStatus LinkControlEndpoint::EnumerateStreams(xnl::Array<XnFwStreamInfo>& aStre
 	for (XnUInt32 i = 0; i < nNumNodes; i++)
 	{
 		aStreamInfos[i].type = (XnFwStreamType)XN_PREPARE_VAR32_IN_BUFFER(pEnumerateNodesResponse->m_streamInfos[i].m_nStreamType);
-		XN_COMPILER_ASSERT(sizeof(aStreamInfos[i].creationInfo) >= sizeof(pEnumerateNodesResponse->m_streamInfos[i].m_strCreationInfo));
 		xnOSStrCopy(aStreamInfos[i].creationInfo, 
 			pEnumerateNodesResponse->m_streamInfos[i].m_strCreationInfo, 
 			sizeof(aStreamInfos[i].creationInfo));

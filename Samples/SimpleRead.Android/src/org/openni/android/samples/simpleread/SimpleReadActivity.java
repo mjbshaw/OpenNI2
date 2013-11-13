@@ -1,3 +1,23 @@
+/*****************************************************************************
+*                                                                            *
+*  OpenNI 2.x Alpha                                                          *
+*  Copyright (C) 2012 PrimeSense Ltd.                                        *
+*                                                                            *
+*  This file is part of OpenNI.                                              *
+*                                                                            *
+*  Licensed under the Apache License, Version 2.0 (the "License");           *
+*  you may not use this file except in compliance with the License.          *
+*  You may obtain a copy of the License at                                   *
+*                                                                            *
+*      http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                            *
+*  Unless required by applicable law or agreed to in writing, software       *
+*  distributed under the License is distributed on an "AS IS" BASIS,         *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  *
+*  See the License for the specific language governing permissions and       *
+*  limitations under the License.                                            *
+*                                                                            *
+*****************************************************************************/
 package org.openni.android.samples.simpleread;
 
 import java.util.List;
@@ -5,7 +25,6 @@ import java.util.List;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.hardware.usb.UsbDeviceConnection;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -24,7 +43,6 @@ public class SimpleReadActivity
 	
 	private static final String TAG = "SimplerRead";
 	private OpenNIHelper mOpenNIHelper;
-	private UsbDeviceConnection mDeviceConnection;
 	private boolean mDeviceOpenPending = false;
 	private Thread mMainLoopThread;
 	private boolean mShouldRun = true;
@@ -69,7 +87,9 @@ public class SimpleReadActivity
 		List<DeviceInfo> devices = OpenNI.enumerateDevices();
 		if (devices.isEmpty()) {
 			showAlertAndExit("No OpenNI-compliant device found.");
+			return;
 		}
+		
 		uri = devices.get(0).getUri();
 		
 		mDeviceOpenPending = true;
@@ -99,6 +119,7 @@ public class SimpleReadActivity
 			mStream.start();
 		} catch (RuntimeException e) {
 			showAlertAndExit("Failed to open stream: " + e.getMessage());
+			return;
 		}
 		
 		mShouldRun = true;
@@ -180,11 +201,6 @@ public class SimpleReadActivity
 		if (mDevice != null) {
 			mDevice.close();
 			mDevice = null;
-		}
-
-		if (mDeviceConnection != null) {
-			mDeviceConnection.close();
-			mDeviceConnection = null;
 		}
 	}
 }

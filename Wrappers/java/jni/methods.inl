@@ -29,6 +29,7 @@ static int register_org_openni_NativeMethods(JNIEnv* env)
 		{ "oniDeviceGetSensorInfo", "(JI)Lorg/openni/SensorInfo;", (void*)&Java_org_openni_NativeMethods_oniDeviceGetSensorInfo },
 		{ "oniDeviceEnableDepthColorSync", "(J)I", (void*)&Java_org_openni_NativeMethods_oniDeviceEnableDepthColorSync },
 		{ "oniDeviceDisableDepthColorSync", "(J)V", (void*)&Java_org_openni_NativeMethods_oniDeviceDisableDepthColorSync },
+		{ "oniDeviceGetDepthColorSyncEnabled", "(J)Z", (void*)&Java_org_openni_NativeMethods_oniDeviceGetDepthColorSyncEnabled },
 		{ "seek", "(JJI)I", (void*)&Java_org_openni_NativeMethods_seek },
 		{ "isImageRegistrationModeSupported", "(JI)Z", (void*)&Java_org_openni_NativeMethods_isImageRegistrationModeSupported },
 		{ "getImageRegistrationMode", "(JLorg/openni/OutArg;)I", (void*)&Java_org_openni_NativeMethods_getImageRegistrationMode },
@@ -90,13 +91,8 @@ static int register_org_openni_android_OpenNIView(JNIEnv* env)
     {
 		{ "nativeCreate", "()J", (void*)&Java_org_openni_android_OpenNIView_nativeCreate },
 		{ "nativeDestroy", "(J)V", (void*)&Java_org_openni_android_OpenNIView_nativeDestroy },
-		{ "nativeSetAlphaValue", "(JI)V", (void*)&Java_org_openni_android_OpenNIView_nativeSetAlphaValue },
-		{ "nativeGetAlphaValue", "(J)I", (void*)&Java_org_openni_android_OpenNIView_nativeGetAlphaValue },
-		{ "nativeOnSurfaceCreated", "(J)V", (void*)&Java_org_openni_android_OpenNIView_nativeOnSurfaceCreated },
-		{ "nativeOnSurfaceChanged", "(JII)V", (void*)&Java_org_openni_android_OpenNIView_nativeOnSurfaceChanged },
-		{ "nativeUpdate", "(JJ)V", (void*)&Java_org_openni_android_OpenNIView_nativeUpdate },
-		{ "nativeClear", "(J)V", (void*)&Java_org_openni_android_OpenNIView_nativeClear },
-		{ "nativeOnDraw", "(J)V", (void*)&Java_org_openni_android_OpenNIView_nativeOnDraw },
+		{ "nativeUpdate", "(JLjava/nio/ByteBuffer;IIJ)V", (void*)&Java_org_openni_android_OpenNIView_nativeUpdate },
+		{ "nativeClear", "(JLjava/nio/ByteBuffer;)V", (void*)&Java_org_openni_android_OpenNIView_nativeClear },
 
     };
     static int methodsCount = sizeof(methods)/sizeof(methods[0]);

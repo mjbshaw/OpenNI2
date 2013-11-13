@@ -18,8 +18,8 @@
 *  limitations under the License.                                            *
 *                                                                            *
 *****************************************************************************/
-#ifndef _PRIME_SENSE_H_
-#define _PRIME_SENSE_H_
+#ifndef PRIMESENSE_H
+#define PRIMESENSE_H
 
 #include <OniCTypes.h>
 
@@ -77,7 +77,8 @@ enum
 	PS_COMMAND_START_LOG = 0x1d27E014, // no arguments
     PS_COMMAND_STOP_LOG = 0x1d27E015, // no arguments
     PS_COMMAND_READ_TEMPERATURE = 0x1d27E016, // no arguments    
-    LINK_COMMAND_GET_TEMP_LIST = 0x1d27E017,// PrintTempList
+    PS_COMMAND_GET_TEMP_LIST = 0x1d27E017,// PrintTempList
+    PS_COMMAND_READ_DEBUG_DATA = 0x1d27E018, //ReadDebugDaata
 };
 
 typedef enum XnUsbInterfaceType
@@ -247,6 +248,13 @@ typedef struct XnCommandSetLogMaskState
 	bool enabled;
 } XnCommandSetLogMaskState;
 
+typedef struct XnCommandDebugData
+{
+    uint16_t dataID;    // Values come from XnLinkInternalPropID
+    uint16_t dataSize;  // in: size of allocated buffer in data, out: actual bytes written to data
+    uint8_t* data;
+} XnCommandDebugData;
+
 #pragma pack (pop)
 
-#endif //_PRIME_SENSE_H_
+#endif // PRIMESENSE_H

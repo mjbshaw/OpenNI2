@@ -155,40 +155,10 @@ XnStatus Context::configure()
 #endif
 	
 	// First, we should process the log related configuration as early as possible.
-	XnInt32 nValue;
-	XnChar strLogPath[XN_FILE_MAX_PATH] = {0};
-
-	//Test if log redirection is needed 
-	rc = xnOSReadStringFromINI(strOniConfigurationFile, "Log", "LogPath", strLogPath, XN_FILE_MAX_PATH);
-	if (rc == XN_STATUS_OK)
+	rc = xnLogInitFromINIFile(strOniConfigurationFile, "Log");
+	if (XN_STATUS_OK != rc)
 	{
-		rc = xnLogSetOutputFolder(strLogPath);
-		if (rc != XN_STATUS_OK)
-		{
-			xnLogWarning(XN_MASK_ONI_CONTEXT, "Failed to set log output folder: %s", xnGetStatusString(rc));
-		}
-		else
-		{
-			xnLogVerbose(XN_MASK_ONI_CONTEXT, "Log directory redirected to: %s", strLogPath);
-		}
-	}
-
-	rc = xnOSReadIntFromINI(strOniConfigurationFile, "Log", "Verbosity", &nValue);
-	if (rc == XN_STATUS_OK)
-	{
-		xnLogSetMaskMinSeverity(XN_LOG_MASK_ALL, (XnLogSeverity)nValue);
-	}
-
-	rc = xnOSReadIntFromINI(strOniConfigurationFile, "Log", "LogToConsole", &nValue);
-	if (rc == XN_STATUS_OK)
-	{
-		xnLogSetConsoleOutput(nValue == 1);
-	}
-
-	rc = xnOSReadIntFromINI(strOniConfigurationFile, "Log", "LogToFile", &nValue);
-	if (rc == XN_STATUS_OK)
-	{
-		xnLogSetFileOutput(nValue == 1);
+		return ONI_STATUS_ERROR;
 	}
 
 	// Now that log was configured, we can start issues some log entries
@@ -217,6 +187,7 @@ XnStatus Context::configure()
 	}
 
 	XnChar strRepo[XN_FILE_MAX_PATH];
+	strRepo[0] = '\0';
 
 #if XN_PLATFORM != XN_PLATFORM_ANDROID_ARM
 	xnOSStrCopy(strRepo, ONI_DEFAULT_DRIVERS_REPOSITORY, sizeof(strRepo));
@@ -244,6 +215,7 @@ XnStatus Context::configure()
 	m_driversList.AddLast("libOniFile.so");
 	m_driversList.AddLast("libPS1080.so");
 	m_driversList.AddLast("libPSLink.so");
+	m_driversList.AddLast("libSD.so");
 #endif
 
 	// check if driver list is overridden

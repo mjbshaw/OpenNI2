@@ -18,8 +18,8 @@
 *  limitations under the License.                                            *
 *                                                                            *
 *****************************************************************************/
-#ifndef _OPENNI_H_
-#define _OPENNI_H_
+#ifndef OPENNI_H
+#define OPENNI_H
 
 #include "OniPlatform.h"
 #include "OniProperties.h"
@@ -100,14 +100,14 @@ typedef struct
 } YUYVDoublePixel;
 
 /** This special URI can be passed to @ref Device::open() when the application has no concern for a specific device. */
-#if ONI_PLATFORM != ONI_PLATFORM_WIN32
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic push
-#endif
-static const char* ANY_DEVICE = NULL;
-#if ONI_PLATFORM != ONI_PLATFORM_WIN32
-#pragma GCC diagnostic pop
-#endif
+class _NullString
+{
+public:
+	_NullString() {}
+	operator const char*() const { return NULL; }
+};
+
+static const _NullString ANY_DEVICE;
 
 /**
 Provides a simple array class used throughout the API. Wraps a primitive array
@@ -2760,7 +2760,6 @@ void Device::close()
 	}
 }
 
-
 }
 
-#endif // _OPEN_NI_HPP_
+#endif // OPENNI_H

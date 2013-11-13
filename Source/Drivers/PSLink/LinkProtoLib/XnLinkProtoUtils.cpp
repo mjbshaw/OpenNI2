@@ -1,3 +1,23 @@
+/*****************************************************************************
+*                                                                            *
+*  OpenNI 2.x Alpha                                                          *
+*  Copyright (C) 2012 PrimeSense Ltd.                                        *
+*                                                                            *
+*  This file is part of OpenNI.                                              *
+*                                                                            *
+*  Licensed under the Apache License, Version 2.0 (the "License");           *
+*  you may not use this file except in compliance with the License.          *
+*  You may obtain a copy of the License at                                   *
+*                                                                            *
+*      http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                            *
+*  Unless required by applicable law or agreed to in writing, software       *
+*  distributed under the License is distributed on an "AS IS" BASIS,         *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  *
+*  See the License for the specific language governing permissions and       *
+*  limitations under the License.                                            *
+*                                                                            *
+*****************************************************************************/
 #include "XnLinkProtoUtils.h"
 #include "XnLinkProto.h"
 #include "XnLinkDefs.h"
@@ -585,7 +605,7 @@ const XnChar* xnLinkPropTypeToStr(XnLinkPropType propType)
 		"General",	//0x0004
 	};
 
-	return (propType < sizeof(PROP_TYPE_STRS) / sizeof(PROP_TYPE_STRS[0])) ? PROP_TYPE_STRS[propType] : "Unknown";
+	return ((size_t)propType < sizeof(PROP_TYPE_STRS) / sizeof(PROP_TYPE_STRS[0])) ? PROP_TYPE_STRS[propType] : "Unknown";
 }
 
 /*XnProductionNodeType xnLinkStreamTypeToNINodeType(XnLinkStreamType streamType)
@@ -947,6 +967,24 @@ XnUInt32 xnLinkGetPixelSizeByStreamType(XnLinkStreamType streamType)
         XN_ASSERT(FALSE);
         return 0;
     }
+}
+XnStatus xnLinkReadDebugData(XnCommandDebugData& commandDebugData, XnLinkDebugDataResponse* pDebugDataResponse)
+{
+    XnStatus nRetVal = XN_STATUS_OK;
+
+    if(commandDebugData.dataSize < pDebugDataResponse->m_header.m_nValueSize)
+    {
+        xnLogError(XN_MASK_LINK, "Size of retrieved data was larger than requested: %u bytes, must be at least %u.", pDebugDataResponse->m_header.m_nValueSize, 
+            commandDebugData.dataSize);
+        XN_ASSERT(FALSE);
+        return XN_STATUS_LINK_BAD_PROP_SIZE;
+    }
+    commandDebugData.dataSize = pDebugDataResponse->m_header.m_nValueSize; //if the sized received is smaller than expected
+    for(int i = 0; i < commandDebugData.dataSize; i++)
+    {
+        commandDebugData.data[i] = pDebugDataResponse->m_data[i];
+    }
+    return nRetVal;
 }
 
 XnStatus xnLinkParseSupportedI2CDevices(const XnLinkSupportedI2CDevices* pDevicesList, XnUInt32 nBufferSize, xnl::Array<XnLinkI2CDevice>& supportedDevices)

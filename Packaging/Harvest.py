@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 
 #/****************************************************************************
 #*                                                                           *
@@ -100,6 +100,7 @@ class Harvest:
         else:
             binDriversDir = self.binDir
             targetDriversDir = targetDir
+            self.copySharedObject(binDriversDir, 'usb', targetDriversDir)
 
         self.copySharedObject(binDriversDir, 'OniFile', targetDriversDir)
         self.copySharedObject(binDriversDir, 'PS1080', targetDriversDir)
@@ -108,6 +109,7 @@ class Harvest:
         if self.osName != 'Android':
             shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI2', 'Drivers', 'PS1080.ini'), targetDriversDir)
             shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI2', 'Drivers', 'PSLink.ini'), targetDriversDir)
+            shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI2', 'Drivers', 'OniFile.ini'), targetDriversDir)
 
         if self.osName == 'Windows':
             self.copySharedObject(binDriversDir, 'Kinect', targetDriversDir)
@@ -132,6 +134,8 @@ class Harvest:
             shutil.copytree(os.path.join(sampleSourceDir, 'res'), os.path.join(sampleTargetDir, 'res'))
             if os.path.exists(os.path.join(sampleSourceDir, 'jni')):
                 shutil.copytree(os.path.join(sampleSourceDir, 'jni'), os.path.join(sampleTargetDir, 'jni'))
+            if os.path.exists(os.path.join(sampleSourceDir, 'assets')):
+                shutil.copytree(os.path.join(sampleSourceDir, 'assets'), os.path.join(sampleTargetDir, 'assets'))
         else:
             for root, dirs, files in os.walk(sampleSourceDir):
                 # take dir name without 'root' and append to target
@@ -281,7 +285,7 @@ $(OUTPUT_FILE): copy-redist
 
         # and executable
         if self.osName == 'Android':
-            apkName = glob.glob(os.path.join(sampleSourceDir, 'bin', '*.apk'))[0]
+            apkName = glob.glob(os.path.join(sampleSourceDir, 'bin', '*-release.apk'))[0]
             realName = os.path.split(sampleTargetDir)[1]
             shutil.copy(apkName, os.path.join(targetBinDir, realName + '.apk'))
         elif isJava:
@@ -327,8 +331,9 @@ $(OUTPUT_FILE): copy-redist
         os.makedirs(targetDir)
         shutil.copytree(os.path.join(self.rootDir, 'Wrappers', 'java', 'src'), os.path.join(targetDir, 'src'))
         shutil.copytree(os.path.join(self.rootDir, 'Wrappers', 'java', 'res'), os.path.join(targetDir, 'res'))
-        shutil.copytree(os.path.join(self.rootDir, 'Wrappers', 'java', 'jni'), os.path.join(targetDir, 'jni'))
         shutil.copytree(os.path.join(self.rootDir, 'Wrappers', 'java', 'libs'), os.path.join(targetDir, 'libs'))
+        os.makedirs(os.path.join(targetDir, 'bin'))
+        shutil.copy(os.path.join(self.rootDir, 'Wrappers', 'java', 'bin', 'classes.jar'), os.path.join(targetDir, 'bin', 'org.openni.jar'))
         shutil.copy(os.path.join(self.rootDir, 'Wrappers', 'java', '.classpath'), targetDir)
         shutil.copy(os.path.join(self.rootDir, 'Wrappers', 'java', '.project'), targetDir)
         shutil.copy(os.path.join(self.rootDir, 'Wrappers', 'java', 'AndroidManifest.xml'), targetDir)
@@ -343,6 +348,32 @@ $(OUTPUT_FILE): copy-redist
         shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI.ini'), targetDir)
         shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI2', 'Drivers', 'PS1080.ini'), targetDir)
         shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI2', 'Drivers', 'PSLink.ini'), targetDir)
+        shutil.copy(os.path.join(self.rootDir, 'Config', 'OpenNI2', 'Drivers', 'OniFile.ini'), targetDir)
+        
+    def createNativeMakefile(self, nativeDir, redistDir):
+        nativeAndroidMk = open(os.path.join(nativeDir, 'Android.mk'), 'w')
+        nativeAndroidMk.write('LOCAL_PATH := $(call my-dir)\n')
+        
+        libs = []
+        for root, dirs, files in os.walk(redistDir):
+            for file in files:
+                if file.startswith('lib') and file.endswith('.so') and file != 'libOpenNI2.so':
+                    moduleName = file[3:len(file)-3]
+                    nativeAndroidMk.write('include $(CLEAR_VARS)\n')
+                    libs.append(moduleName)
+                    nativeAndroidMk.write('LOCAL_MODULE := ' + moduleName + '\n')
+                    nativeAndroidMk.write('LOCAL_SRC_FILES := $(TARGET_ARCH_ABI)/' + file + '\n')
+                    nativeAndroidMk.write('include $(PREBUILT_SHARED_LIBRARY)\n')
+                    nativeAndroidMk.write('\n')
+        
+        # and now OpenNI itself
+        nativeAndroidMk.write('include $(CLEAR_VARS)\n')
+        nativeAndroidMk.write('LOCAL_MODULE := OpenNI2\n')
+        nativeAndroidMk.write('LOCAL_SRC_FILES := $(TARGET_ARCH_ABI)/libOpenNI2.so\n')
+        nativeAndroidMk.write('LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include\n')
+        nativeAndroidMk.write('LOCAL_SHARED_LIBRARIES := ' + ' '.join(libs) + '\n')
+        nativeAndroidMk.write('include $(PREBUILT_SHARED_LIBRARY)\n')
+        nativeAndroidMk.write('\n')
 
     def run(self):
         if os.path.exists(self.outDir):
@@ -351,7 +382,8 @@ $(OUTPUT_FILE): copy-redist
 
         # Redist
         if self.osName == 'Android':
-            redistDir = os.path.join(self.outDir, 'Libs')
+            nativeDir = os.path.join(self.outDir, 'Native', 'OpenNI2')
+            redistDir = os.path.join(nativeDir, 'armeabi-v7a')
         else:
             redistDir = os.path.join(self.outDir, 'Redist')
         self.copyRedistFiles(redistDir)
@@ -396,12 +428,21 @@ $(OUTPUT_FILE): copy-redist
         self.copyDocumentation(docDir)
 
         # Include
-        shutil.copytree(os.path.join(self.rootDir, 'Include'), os.path.join(self.outDir, 'Include'))
-
-        # Android lib
         if self.osName == 'Android':
+            incDir = os.path.join(nativeDir, 'include')
+        else:
+            incDir = os.path.join(self.outDir, 'Include')
+        shutil.copytree(os.path.join(self.rootDir, 'Include'), incDir)
+
+        # Android stuff
+        if self.osName == 'Android':
+            # Android native makefile
+            self.createNativeMakefile(nativeDir, redistDir)
+
+            # Android lib
             self.copyAndroidLib(os.path.join(self.outDir, 'OpenNIAndroidLibrary'))
             self.copyAssets(os.path.join(self.outDir, 'Assets', 'openni'))
+            
 
         # Release notes and change log
         shutil.copy(os.path.join(self.rootDir, 'ReleaseNotes.txt'), self.outDir)

@@ -18,36 +18,55 @@
 *  limitations under the License.                                            *
 *                                                                            *
 *****************************************************************************/
-#ifndef __XN_16Z_CODEC_H__
-#define __XN_16Z_CODEC_H__
+package org.openni.android.tools.niviewer;
 
-//---------------------------------------------------------------------------
-// Includes
-//---------------------------------------------------------------------------
-#include "XnCodecBase.h"
-#include <Formats/XnStreamCompression.h>
+import java.util.ArrayList;
+import java.util.List;
 
-//---------------------------------------------------------------------------
-// Types
-//---------------------------------------------------------------------------
-class Xn16zCodec : public XnCodecBase
-{
-public:
-	virtual XnCompressionFormats GetCompressionFormat() const { return XN_COMPRESSION_16Z; }
+import org.openni.DeviceInfo;
 
-	virtual XnFloat GetWorseCompressionRatio() const { return XN_STREAM_COMPRESSION_DEPTH16Z_WORSE_RATIO; }
-	virtual XnUInt32 GetOverheadSize() const { return 0; }
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
-protected:
-	virtual XnStatus CompressImpl(const XnUChar* pData, XnUInt32 nDataSize, XnUChar* pCompressedData, XnUInt32* pnCompressedDataSize)
-	{
-		return XnStreamCompressDepth16Z((XnUInt16*)pData, nDataSize, pCompressedData, pnCompressedDataSize);
+public class DeviceSelectDialog implements DialogInterface.OnClickListener {
+	protected List<String> mDeviceURIs;
+	NiViewerActivity mViewerActivity;
+
+	public void showDialog(List<DeviceInfo> devices, int activeDeviceID,
+			NiViewerActivity viewerActivity) {
+
+		mViewerActivity = viewerActivity;
+		int devicesCount = devices.size();
+
+		CharSequence[] deviceNames = new CharSequence[devicesCount];
+		mDeviceURIs = new ArrayList<String>(devicesCount);
+		for (int i = 0; i < devices.size(); i++) {
+			deviceNames[i] = devices.get(i).getName() + "(" + devices.get(i).getUri() + ")";
+			mDeviceURIs.add(devices.get(i).getUri());
+		}
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(viewerActivity);
+		builder.setTitle("Pick Device");
+		builder.setNegativeButton("Cancel",
+				new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+					}
+				});
+
+		builder.setSingleChoiceItems(deviceNames, activeDeviceID, this);
+
+		builder.create().show();
 	}
 
-	virtual XnStatus DecompressImpl(const XnUChar* pCompressedData, XnUInt32 nCompressedDataSize, XnUChar* pData, XnUInt32* pnDataSize)
-	{
-		return XnStreamUncompressDepth16Z(pCompressedData, nCompressedDataSize, (XnUInt16*)pData, pnDataSize);
-	}
-};
+	@Override
+	public void onClick(DialogInterface dialog, int which) {
+		String uri;
 
-#endif //__XN_16Z_CODEC_H__
+		uri = mDeviceURIs.get(which);
+
+		mViewerActivity.openDevice(uri);
+		
+		dialog.cancel();
+	}
+}

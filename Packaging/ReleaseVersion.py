@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 
 #/****************************************************************************
 #*                                                                           *
@@ -155,7 +155,7 @@ if plat == 'Android':
     harvest = Harvest('..', outputDir, 'Arm', 'Android')
     harvest.run()
 
-    finalFile = os.path.join(finalDir, outputDir + ".tar")
+    finalFile = finalDir + '/' + outputDir + ".tar"
     print('Creating archive ' + finalFile)
     subprocess.check_call(['tar', '-cf', finalFile, outputDir])
 

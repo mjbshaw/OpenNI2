@@ -6,7 +6,7 @@ else
 endif
 
 # Setup arm flags
-LOCAL_CFLAGS += -O3 -ftree-vectorize -ffast-math -funroll-loops -fPIC -fvisibility=hidden
+LOCAL_CFLAGS += -Ofast -ftree-vectorize -ffast-math -funroll-loops -fPIC -fvisibility=hidden
 
 ifeq ($(ARCH_ARM_HAVE_NEON),true)
 	LOCAL_CFLAGS += -DHAVE_NEON=1 -DXN_NEON -flax-vector-conversions
